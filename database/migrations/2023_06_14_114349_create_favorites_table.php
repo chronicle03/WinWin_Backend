@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('favorites', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->integer('user_favorite_id');
+            $table->integer('user_id');
+            $table->integer('user_favorite_id')->nullable();
             $table->timestamps();
         });
     }

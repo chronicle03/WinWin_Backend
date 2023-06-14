@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('galleries', function (Blueprint $table) {            
             $table->id();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('photo_path');
+            $table->integer('user_id');
+            $table->string('photo_path')->nullable();
             $table->timestamps();
         });
     }
