@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('notification', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->foreignId('status_id')->nullable()->index();
-            $table->foreignId('type_notifications_id')->nullable()->index();
-            $table->string('status');
-            //$table->string('status'); apaa ini kahh??
-            $table->string('deskripsi');
+            $table->integer('user_id');
+            $table->integer('status_id');
+            $table->integer('type_notifications_id');
+            $table->string('status')->nullable();
+            $table->string('description')->nullable();
             $table->timestamps();
         });
     }

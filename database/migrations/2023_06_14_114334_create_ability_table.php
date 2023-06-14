@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('ability', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->foreignId('skills_id')->nullable()->index();
-            $table->string('level');
+            $table->integer('user_id');
+            $table->integer('skills_id');
+            $table->string('level')->nullable();
             $table->timestamps();
         });
     }
