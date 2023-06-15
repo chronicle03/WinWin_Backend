@@ -114,11 +114,10 @@ Class UserController extends Controller
                 'username' => ['required', 'string', 'max:100', 'unique:users'],
                 'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
                 'password' => ['required', 'string', new Password],
-                'birthdate' => ['date'],
-                'bio' => ['string', 'max:500'],
+                'confirm_password' => ['required'],
+                'birthdate' => ['string'],
+                'is_checked' => ['required'],
                 'phone_number' => ['required', 'numeric', 'unique:users'],
-                'location' => ['string'],
-                'job_status' => ['required', 'string'],
             ]);
     
             if ($validator->fails()) {
@@ -128,15 +127,26 @@ Class UserController extends Controller
                 ], 'Bad Request', 400);
             }
 
+            if ($request->confirm_password != $request->password){
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => $validator->errors()->add('confirm_password', 'confirmation password must be the same as the password'),
+                ], 'Bad Request', 400);
+            }
+
+            if ($request->is_checked == "false"){
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => $validator->errors()->add('is_checked', 'terms of service & privacy policy must be agree'),
+                ], 'Bad Request', 400);
+            }
+
             User::create([
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
                 'birthdate' => $request->birthdate,
-                'bio' => $request->bio,
                 'phone_number'=> $request->phone_number,
-                'location' => $request->location,
-                'job_status' => $request->job_status,
                 'password' => Hash::make($request->password),
             ]);
 
