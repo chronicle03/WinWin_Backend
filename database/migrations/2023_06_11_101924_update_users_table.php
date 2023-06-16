@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('location')->after('email_verified_at')->nullable();
             $table->string('bio')->after('email_verified_at')->nullable();
             $table->string('phone_number')->unique()->after('email_verified_at');
-            $table->date('birthdate')->after('email_verified_at');
-            $table->string('username')->unique()->after('email_verified_at');
+            $table->string('birthdate')->after('email_verified_at');
         });
     }
 

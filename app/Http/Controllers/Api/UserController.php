@@ -47,7 +47,7 @@ Class UserController extends Controller
                 'status' => false,
                 'message' => $validator->errors()
             ], 400);
-        }else{
+            }else{
             //jika ok, simpan user baru
             $user = new User();
             $user->name = $request->name;
@@ -68,7 +68,7 @@ Class UserController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(),[
-            'email' => ['required', 'email'],
+            'email' => ['email'],
             'password' => ['required'],
         ],[
             'email.required' => 'Email harus diisi.',
