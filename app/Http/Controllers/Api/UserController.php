@@ -130,7 +130,7 @@ Class UserController extends Controller
             if ($request->confirm_password != $request->password){
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
-                    'errors' => $validator->errors()->add('confirm_password', 'confirmation password must be the same as the password'),
+                    'errors' => $validator->errors()->add('confirm_password', 'confirm password must be the same as the password'),
                 ], 'Bad Request', 400);
             }
 
