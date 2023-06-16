@@ -23,3 +23,6 @@ Route::post('register', [UserController::class, "register"]);
 Route::post('login', [UserController::class, "login"]);
 Route::get('users', [UserController::class, "getAllUsers"]);
 Route::get('users/{id}', [UserController::class, "getUserById"]);
+Route::post('login',[UserController::class, "login"]);
+
+
