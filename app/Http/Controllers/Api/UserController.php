@@ -8,160 +8,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
 use Exception;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Rules\Password;
 
 
-Class UserController extends Controller
-{
-    /*public function construct()
-    {
-        $this->middleware(['auth:api', 'verified'], ['except'=>['login', 'register', 'verify', 'notice', 'resend']]);
-    }*/
-
-    public function register(Request $request)
-    {
-         //validasi
-         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:100', 'unique:users'],
-            'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
-            'password' => ['required', 'string', 'min:8','confirmed'],
-            'phone_number' => ['required', 'numeric', 'unique:users'],
-            'birthdate' => ['date'],
-            'bio' => ['string', 'max:500'],
-            'location' => ['string'],
-            'job_status' => ['string'],
-        ],[
-            'name.required' => 'Nama harus diisi.',
-            'username.unique' => 'Username sudah dipakai.',
-            'username.required' => 'Username harus diisi.',
-            'email.required' => 'Email harus diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah terdaftar.',
-            'password.required' => 'Password harus diisi.',
-            'password.confirmed' => 'Password tidak sama.',
-            'phone_number.required' => 'Nomor telepon harus diisi.',
-            'phone_number.unique' => 'Nomor telepon sudah diisi. ',
-        ]);
-
-        if ($validator->fails()){
-            //jika gagal
-            return response()->json([
-                'status' => false,
-                'message' => $validator->errors()
-            ], 400);
-            }User::create([
-                'name' => $request->name,
-                'username' => $request->username,
-                'email' => $request->email,
-                'birthdate' => $request->birthdate,
-                'phone_number'=> $request->phone_number,
-                'password' => Hash::make($request->password),
-            ])->sendEmailVerificationNotification();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Berhasil register. Silahkan cek email anda untuk melakukan verifikasi'
-            ],200);
-    }
-
-    public function login(Request $request)
-    {
-        $validator = Validator::make($request->all(),[
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ],[
-            'email.required' => 'Email harus diisi.',
-            'password.required' => 'Password harus diisi.',
-        ]);
-        if ($validator->fails()){
-            //jika gagal
-            return response()->json([
-                'status' => false,
-                'message' => $validator->errors()
-            ], 400);
-        }else{
-            //jika ok
-            if (Auth::attempt(['email' => $request->email, 'password'=> $request->password]))
-            {
-                //jika email atau password valid
-                $user = Auth::user();
-                $token = $user->createToken('authToken')->plainTextToken;
-                
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Login berhasil.',
-                    'token' => $token
-                ], 200);
-            }else{
-                //jika email atau password tidak valid
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Login gagal.'
-                ], 400);
-            }
-        }
-    }
-
-    public function logout()
-    {
-        Auth::user()->tokens()->delete();
-
-        return response()->json([
-            'status' =>true,
-            'message' => 'Anda berhasil logout.'
-        ]);
-    }
-
-    public function verify($id, Request $request)
-    {
-        if(!$request->hasValidSignature()){
-            return response()->json([
-                'status' => false,
-                'message' => 'Verifikasi email gagal.'
-            ], 400);
-        }
-            $user = User::find($id);
-
-        if (!$user->hasVerifiedEmail()){
-             $user->markEmailAsVerified();
-        }
-
-            return  redirect()->to('/'); 
-        
-    }
-
-    public function notice()
-    {
-        return response()->json([
-            'status' => false,                  
-            'message' => 'Anda belum melakukan verifikasi email.'
-        ], 400);
-    }
-
-    public function resend()
-    {
-        if (Auth::user()->hasVerifiedEmail())
-        {
-            return response()->json([
-                'status' => true, 
-                'message' => 'Email sudah diverifikasi'
-            ], 200);
-        }
-
-        Auth::user()->sendEmailVerificationNotification();
-        return response()->json([
-            'status' => true,
-            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
-        ], 200);
-    }
-
-}
-
-
-/*class UserController extends Controller
+class UserController extends Controller
 {
     public function register(Request $request)
     {
@@ -176,7 +28,7 @@ Class UserController extends Controller
                 'is_checked' => ['required'],
                 'phone_number' => ['required', 'numeric', 'unique:users'],
             ]);
-    
+
             if ($validator->fails()) {
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
@@ -184,14 +36,14 @@ Class UserController extends Controller
                 ], 'Bad Request', 400);
             }
 
-            if ($request->confirm_password != $request->password){
+            if ($request->confirm_password != $request->password) {
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
                     'errors' => $validator->errors()->add('confirm_password', 'confirmation password must be the same as the password'),
                 ], 'Bad Request', 400);
             }
 
-            if ($request->is_checked == "false"){
+            if ($request->is_checked == "false") {
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
                     'errors' => $validator->errors()->add('is_checked', 'terms of service & privacy policy must be agree'),
@@ -203,9 +55,9 @@ Class UserController extends Controller
                 'username' => $request->username,
                 'email' => $request->email,
                 'birthdate' => $request->birthdate,
-                'phone_number'=> $request->phone_number,
+                'phone_number' => $request->phone_number,
                 'password' => Hash::make($request->password),
-            ]);
+            ])->sendEmailVerificationNotification();
 
             $user = User::where('email', $request->email)->first();
 
@@ -224,11 +76,98 @@ Class UserController extends Controller
         }
     }
 
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if ($validator->fails()) {
+            //jika gagal
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => $validator->errors()
+            ], 'Bad Request', 400);
+        } else {
+            //jika ok
+            if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+                //jika email atau password valid
+                $user = Auth::user();
+                $token = $user->createToken('authToken')->plainTextToken;
+
+                return ResponseFormatter::success([
+                    'access_token' => $token,
+                    'token_type' => env('TOKEN_TYPE', 'secret'),
+                    'user' => $user
+                ], "login success");
+            } else {
+                //jika email atau password tidak valid
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => "The email or password is wrong"
+                ], 'Bad Request', 400);
+            }
+        }
+    }
+
+    public function logout()
+    {
+        Auth::user()->tokens()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Anda berhasil logout.'
+        ]);
+    }
+
+    public function verify($id, Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Verifikasi email gagal.'
+            ], 400);
+        }
+        $user = User::find($id);
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return  redirect()->to('/');
+    }
+
+    public function notice()
+    {
+        return response()->json([
+            'status' => false,
+            'message' => 'Anda belum melakukan verifikasi email.'
+        ], 400);
+    }
+
+    public function resend()
+    {
+        if (Auth::user()->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Email sudah diverifikasi'
+            ], 200);
+        }
+
+        Auth::user()->sendEmailVerificationNotification();
+        return response()->json([
+            'status' => true,
+            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
+        ], 200);
+    }
+
+
     public function getAllUsers()
-    {   
+    {
         try {
             $user = User::all();
-            
+
             return ResponseFormatter::success([
                 'user' => $user
             ], "success get all users");
@@ -241,10 +180,10 @@ Class UserController extends Controller
     }
 
     public function getUserById($id)
-    {   
+    {
         try {
             $user = User::find($id);
-            
+
             if ($user) {
                 return ResponseFormatter::success([
                     'user' => $user
@@ -254,8 +193,6 @@ Class UserController extends Controller
             return ResponseFormatter::error([
                 'message' => 'not found',
             ], 'user not found', 404);
-            
-            
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 "message" => " something erorr",
@@ -263,5 +200,4 @@ Class UserController extends Controller
             ], 'authentication failed', 500);
         }
     }
-
-}*/
+}
