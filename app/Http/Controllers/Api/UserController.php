@@ -15,10 +15,15 @@ use Laravel\Fortify\Rules\Password;
 
 Class UserController extends Controller
 {
+    /*public function construct()
+    {
+        $this->middleware(['auth:api', 'verified'], ['except'=>['login', 'register', 'verify', 'notice', 'resend']]);
+    }*/
+
     public function register(Request $request)
     {
-        //validasi
-        $validator = Validator::make($request->all(), [
+         //validasi
+         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'max:100', 'unique:users'],
             'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
@@ -47,34 +52,30 @@ Class UserController extends Controller
                 'status' => false,
                 'message' => $validator->errors()
             ], 400);
-            }else{
-            //jika ok, simpan user baru
-            $user = new User();
-            $user->name = $request->name;
-            $user->username = $request->username;
-            $user->birthdate = $request->birthdate;
-            $user->email = $request->email;
-            $user->password = Hash::make($request->password);
-            $user->phone_number = $request->phone_number;
-            $user->save();
+            }User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'birthdate' => $request->birthdate,
+                'phone_number'=> $request->phone_number,
+                'password' => Hash::make($request->password),
+            ])->sendEmailVerificationNotification();
 
             return response()->json([
                 'status' => true,
-                'message' => 'User registered.'
-            ],201);
-        }
+                'message' => 'Berhasil register. Silahkan cek email anda untuk melakukan verifikasi'
+            ],200);
     }
 
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(),[
-            'email' => ['email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ],[
             'email.required' => 'Email harus diisi.',
             'password.required' => 'Password harus diisi.',
         ]);
-
         if ($validator->fails()){
             //jika gagal
             return response()->json([
@@ -83,18 +84,19 @@ Class UserController extends Controller
             ], 400);
         }else{
             //jika ok
-            if (Auth::attempt(['email' => $request->email, 'password'=> $request->password])) {
-                //jika username atau password valid
-                $user = Auth::user(); 
+            if (Auth::attempt(['email' => $request->email, 'password'=> $request->password]))
+            {
+                //jika email atau password valid
+                $user = Auth::user();
                 $token = $user->createToken('authToken')->plainTextToken;
-
+                
                 return response()->json([
                     'status' => true,
                     'message' => 'Login berhasil.',
                     'token' => $token
                 ], 200);
             }else{
-                //jika username atau password tidak valid
+                //jika email atau password tidak valid
                 return response()->json([
                     'status' => false,
                     'message' => 'Login gagal.'
@@ -102,7 +104,62 @@ Class UserController extends Controller
             }
         }
     }
+
+    public function logout()
+    {
+        Auth::user()->tokens()->delete();
+
+        return response()->json([
+            'status' =>true,
+            'message' => 'Anda berhasil logout.'
+        ]);
+    }
+
+    public function verify($id, Request $request)
+    {
+        if(!$request->hasValidSignature()){
+            return response()->json([
+                'status' => false,
+                'message' => 'Verifikasi email gagal.'
+            ], 400);
+        }
+            $user = User::find($id);
+
+        if (!$user->hasVerifiedEmail()){
+             $user->markEmailAsVerified();
+        }
+
+            return  redirect()->to('/'); 
+        
+    }
+
+    public function notice()
+    {
+        return response()->json([
+            'status' => false,                  
+            'message' => 'Anda belum melakukan verifikasi email.'
+        ], 400);
+    }
+
+    public function resend()
+    {
+        if (Auth::user()->hasVerifiedEmail())
+        {
+            return response()->json([
+                'status' => true, 
+                'message' => 'Email sudah diverifikasi'
+            ], 200);
+        }
+
+        Auth::user()->sendEmailVerificationNotification();
+        return response()->json([
+            'status' => true,
+            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
+        ], 200);
+    }
+
 }
+
 
 /*class UserController extends Controller
 {
