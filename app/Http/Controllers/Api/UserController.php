@@ -2,23 +2,26 @@
 
 namespace App\Http\Controllers\Api;
 
+
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
+use Laravel\Passport\HasApiTokens;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Laravel\Fortify\Rules\Password;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 
 class UserController extends Controller
-{  
+{
     public function register(Request $request)
     {
-        //validasi
-        $validator = Validator::make($request->all(), [
+         //validasi
+         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'max:100', 'unique:users'],
             'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
@@ -47,33 +50,35 @@ class UserController extends Controller
                 'status' => false,
                 'message' => $validator->errors()
             ], 400);
-        }else{
-            //jika ok, simpan user baru
-            $user = new User();
-            $user->name = $request->name;
-            $user->username = $request->username;
-            $user->birthdate = $request->birthdate;
-            $user->email = $request->email;
-            $user->password = Hash::make($request->password);
-            $user->phone_number = $request->phone_number;
-            $user->save();
+            }User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'birthdate' => $request->birthdate,
+                'phone_number'=> $request->phone_number,
+                'password' => Hash::make($request->password),
+            ])->sendEmailVerificationNotification();
 
             return response()->json([
                 'status' => true,
-                'message' => 'User registered.'
-            ],201);
-        }
+                'message' => 'Berhasil register. Silahkan cek email anda untuk melakukan verifikasi'
+            ],200);
     }
 
-    // Metode lain di sini...
     public function login(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'username' => ['required', 'string'],
-                'email' => ['required', 'string', 'email'],
-                'phone_number' => ['required', 'string'],
+                'username' => ['required_without_all:email,phone_number', 'string'],
+                'email' => ['required_without_all:username,phone_number', 'string', 'email'],
+                'phone_number' => ['required_without_all:username,email', 'string'],
                 'password' => ['required', 'string'],
+            
+            ],[
+                'username.required_without_all' => 'Kolom username harus diisi saat email atau nomor telepon tidak ada.',
+                'email.required_without_all' => 'Kolom email harus diisi saat username atau nomor telepon tidak ada.',
+                'phone_number.required_without_all' => 'Kolom nomor telepon harus diisi saat username atau email tidak ada.',
+                'password.required' => 'Kolom password harus diisi.', 
             ]);
     
             if ($validator->fails()) {
@@ -83,21 +88,42 @@ class UserController extends Controller
                 ], 'Bad Request', 400);
             }
     
-            $user = User::where(function ($query) use ($request) {
-            $query->where('username', $request->input('username'))
-                    ->orWhere('email', $request->input('email'))
-                    ->orWhere('phone_number', $request->input('phone_number'));
-    })->first();
+            $username = $request->input('username');
+            $email = $request->input('email');
+            $phone_number = $request->input('phone_number');
+            $password = $request->input('password');
     
-            if (!$user) {
-                return ResponseFormatter::error([
-                    'message' => 'User not found',
+            $user = null;
+    
+            if (!empty($username)) {
+                $user = User::where('username', $username)->first();
+    
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User tidak ditemukan',
                     ], 'Authentication failed', 404);
+                }
+            } elseif (!empty($email)) {
+                $user = User::where('email', $email)->first();
+    
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User tidak ditemukan',
+                    ], 'Authentication failed', 404);
+                }
+            } elseif (!empty($phone_number)) {
+                $user = User::where('phone_number', $phone_number)->first();
+    
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User tidak ditemukan',
+                    ], 'Authentication failed', 404);
+                }
             }
     
-            if (!Hash::check($request->input('password'), $user->password)) {
+            if (!Hash::check($password, $user->password)) {
                 return ResponseFormatter::error([
-                    'message' => 'Invalid password',
+                    'message' => 'Password yang dimasukan salah',
                 ], 'Authentication failed', 401);
             }
     
@@ -107,7 +133,7 @@ class UserController extends Controller
                 'access_token' => $token,
                 'token_type' => env('TOKEN_TYPE', 'Bearer'),
                 'user' => $user
-            ], "Login successful");
+            ], "Login berhasil");
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 "message" => "Something error",
@@ -115,4 +141,96 @@ class UserController extends Controller
             ], 'Authentication failed', 500);
         }
     }
+     
+    
+    public function logout()
+    {
+        Auth::user()->tokens()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Anda berhasil logout.'
+        ]);
+    }
+
+    public function verify($id, Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Verifikasi email gagal.'
+            ], 400);
+        }
+        $user = User::find($id);
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return  redirect()->to('/');
+    }
+
+    public function notice()
+    {
+        return response()->json([
+            'status' => false,
+            'message' => 'Anda belum melakukan verifikasi email.'
+        ], 400);
+    }
+
+    public function resend()
+    {
+        if (Auth::user()->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Email sudah diverifikasi'
+            ], 200);
+        }
+
+        Auth::user()->sendEmailVerificationNotification();
+        return response()->json([
+            'status' => true,
+            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
+        ], 200);
+    }
+
+
+    public function getAllUsers()
+    {
+        try {
+            $user = User::all();
+
+            return ResponseFormatter::success([
+                'user' => $user
+            ], "success get all users");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                "message" => " something erorr",
+                "error" => $error
+            ], 'authentication failed', 500);
+        }
+    }
+
+    public function getUserById($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if ($user) {
+                return ResponseFormatter::success([
+                    'user' => $user
+                ], "success get user");
+            }
+
+            return ResponseFormatter::error([
+                'message' => 'not found',
+            ], 'user not found', 404);
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                "message" => " something erorr",
+                "error" => $error
+            ], 'authentication failed', 500);
+        }
+    }
 }
+
