@@ -75,10 +75,10 @@ class UserController extends Controller
                 'password' => ['required', 'string'],
             
             ],[
-                'username.required_without_all' => 'Kolom username harus diisi saat email atau nomor telepon tidak ada.',
-                'email.required_without_all' => 'Kolom email harus diisi saat username atau nomor telepon tidak ada.',
-                'phone_number.required_without_all' => 'Kolom nomor telepon harus diisi saat username atau email tidak ada.',
-                'password.required' => 'Kolom password harus diisi.', 
+                'username.required_without_all' => 'The username field must be filled when the username or telephone number does not exist.',
+                'email.required_without_all' => 'The email field must be filled when the username or telephone number does not exist.',
+                'phone_number.required_without_all' => 'The phone number field must be filled in when the username or telephone number does not exist.',
+                'password.required' => 'Password field is required', 
             ]);
     
             if ($validator->fails()) {
@@ -100,7 +100,7 @@ class UserController extends Controller
     
                 if (!$user) {
                     return ResponseFormatter::error([
-                        'message' => 'User tidak ditemukan',
+                        'message' => 'User not found',
                     ], 'Authentication failed', 404);
                 }
             } elseif (!empty($email)) {
@@ -108,7 +108,7 @@ class UserController extends Controller
     
                 if (!$user) {
                     return ResponseFormatter::error([
-                        'message' => 'User tidak ditemukan',
+                        'message' => 'User not found',
                     ], 'Authentication failed', 404);
                 }
             } elseif (!empty($phone_number)) {
@@ -116,14 +116,14 @@ class UserController extends Controller
     
                 if (!$user) {
                     return ResponseFormatter::error([
-                        'message' => 'User tidak ditemukan',
+                        'message' => 'User not found',
                     ], 'Authentication failed', 404);
                 }
             }
     
             if (!Hash::check($password, $user->password)) {
                 return ResponseFormatter::error([
-                    'message' => 'Password yang dimasukan salah',
+                    'message' => 'Oops! The password you entered is incorrect.',
                 ], 'Authentication failed', 401);
             }
     
@@ -133,7 +133,7 @@ class UserController extends Controller
                 'access_token' => $token,
                 'token_type' => env('TOKEN_TYPE', 'Bearer'),
                 'user' => $user
-            ], "Login berhasil");
+            ], "Congratulations, you have successfully logged in!");
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 "message" => "Something error",
