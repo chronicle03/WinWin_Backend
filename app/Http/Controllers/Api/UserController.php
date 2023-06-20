@@ -20,53 +20,63 @@ class UserController extends Controller
 {
     public function register(Request $request)
     {
-        //validasi
-        $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:100', 'unique:users'],
-            'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
-            'password' => ['required', 'string', 'min:8'],
-            'phone_number' => ['required', 'numeric', 'unique:users'],
-            'birthdate' => ['date'],
-            'bio' => ['string', 'max:500'],
-            'location' => ['string'],
-            'job_status' => ['string'],
-        ],[
-            'name.required' => 'Nama harus diisi.',
-            'username.unique' => 'Username sudah dipakai.',
-            'username.required' => 'Username harus diisi.',
-            'email.required' => 'Email harus diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah terdaftar.',
-            'password.required' => 'Password harus diisi.',
-            'password.confirmed' => 'Password tidak sama.',
-            'phone_number.required' => 'Nomor telepon harus diisi.',
-            'phone_number.unique' => 'Nomor telepon sudah diisi. ',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:100'],
+                'username' => ['required', 'string', 'max:100', 'unique:users'],
+                'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
+                'password' => ['required', 'string', new Password],
+                'confirm_password' => ['required'],
+                'birthdate' => ['string'],
+                'is_checked' => ['required'],
+                'phone_number' => ['required', 'numeric', 'unique:users'],
+            ]);
 
-        if ($validator->fails()) {
-            //jika gagal
-            return response()->json([
-                'status' => false,
-                'message' => $validator->errors()
-            ], 400);
+            if ($validator->fails()) {
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => $validator->errors()
+                ], 'Bad Request', 400);
+            }
+
+            if ($request->confirm_password != $request->password) {
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => $validator->errors()->add('confirm_password', 'confirmation password must be the same as the password'),
+                ], 'Bad Request', 400);
+            }
+
+            if ($request->is_checked == "false") {
+                return ResponseFormatter::error([
+                    'message' => 'Bad Request',
+                    'errors' => $validator->errors()->add('is_checked', 'terms of service & privacy policy must be agree'),
+                ], 'Bad Request', 400);
+            }
+
+            User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'birthdate' => $request->birthdate,
+                'phone_number' => $request->phone_number,
+                'password' => Hash::make($request->password),
+            ])->sendEmailVerificationNotification();
+
+            $user = User::where('email', $request->email)->first();
+
+            $token = $user->createToken('authToken')->plainTextToken;
+
+            return ResponseFormatter::success([
+                'access_token' => $token,
+                'token_type' => env('TOKEN_TYPE', 'secret'),
+                'user' => $user
+            ], "user registered");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                "message" => " something erorr",
+                "error" => $error
+            ], 'authentication failed', 500);
         }
-
-        $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'birthdate' => $request->birthdate,
-            'phone_number'=> $request->phone_number,
-            'password' => Hash::make($request->password),
-        ]);
-
-        $user->sendEmailVerificationNotification();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Berhasil register. Silahkan cek email anda untuk melakukan verifikasi'
-        ],200);
     }
 
     public function login(Request $request)
