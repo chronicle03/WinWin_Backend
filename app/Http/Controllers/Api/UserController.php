@@ -164,19 +164,71 @@ class UserController extends Controller
      
     // Metode lainnya...
 
+    public function logout()
+    {
+        Auth::user()->tokens()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Anda berhasil logout.'
+        ]);
+    }
+
+    public function verify($id, Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Verifikasi email gagal.'
+            ], 400);
+        }
+        $user = User::find($id);
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return  redirect()->to('/');
+    }
+
+    public function notice()
+    {
+        return response()->json([
+            'status' => false,
+            'message' => 'Anda belum melakukan verifikasi email.'
+        ], 400);
+    }
+
+    public function resend()
+    {
+        if (Auth::user()->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Email sudah diverifikasi'
+            ], 200);
+        }
+
+        Auth::user()->sendEmailVerificationNotification();
+        return response()->json([
+            'status' => true,
+            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
+        ], 200);
+    }
+
+
     public function getAllUsers()
     {
         try {
-            $users = User::all();
+            $user = User::all();
 
             return ResponseFormatter::success([
-                'users' => $users
-            ], "Success get all users");
+                'user' => $user
+            ], "success get all users");
         } catch (Exception $error) {
             return ResponseFormatter::error([
-                "message" => "Something error",
+                "message" => " something erorr",
                 "error" => $error
-            ], 'Authentication failed', 500);
+            ], 'authentication failed', 500);
         }
     }
 
@@ -188,18 +240,17 @@ class UserController extends Controller
             if ($user) {
                 return ResponseFormatter::success([
                     'user' => $user
-                ], "Success get user");
+                ], "success get user");
             }
 
             return ResponseFormatter::error([
-                'message' => 'User not found',
-            ], 'User not found', 404);
+                'message' => 'not found',
+            ], 'user not found', 404);
         } catch (Exception $error) {
             return ResponseFormatter::error([
-                "message" => "Something error",
+                "message" => " something erorr",
                 "error" => $error
-            ], 'Authentication failed', 500);
+            ], 'authentication failed', 500);
         }
     }
 }
-
