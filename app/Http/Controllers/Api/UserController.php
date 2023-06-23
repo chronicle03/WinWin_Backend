@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
 use Exception;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Rules\Password;
@@ -62,7 +63,7 @@ class UserController extends Controller
             $user = User::where('email', $request->email)->first();
 
             $token = $user->createToken('authToken')->plainTextToken;
-
+            
             return ResponseFormatter::success([
                 'access_token' => $token,
                 'token_type' => env('TOKEN_TYPE', 'secret'),
@@ -146,20 +147,43 @@ class UserController extends Controller
         ], 400);
     }
 
-    public function resend()
-    {
-        if (Auth::user()->hasVerifiedEmail()) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Email sudah diverifikasi'
-            ], 200);
+    public function resend(Request $request)
+    {   
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'string', 'max:255', 'email'],
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => $validator->errors()
+            ], 'Bad Request', 400);
         }
 
-        Auth::user()->sendEmailVerificationNotification();
-        return response()->json([
-            'status' => true,
-            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
-        ], 200);
+        $user = User::where('email', $request->email)->first();
+
+        if(!$user){
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => "The email haven't registered"
+            ], 'Bad Request', 400);  
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => "The email has been verified"
+            ], 'Bad Request', 400);
+        }
+
+        $user->sendEmailVerificationNotification();
+        return ResponseFormatter::success([
+            'message' => 'email verification link sent successfully',
+            'user' => [
+                'email' => $user->email
+            ],
+            'errors' => ''
+        ], 'success');
     }
 
 
