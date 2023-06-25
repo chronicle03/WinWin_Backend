@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
+use Laravel\Passport\HasApiTokens;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Rules\Password;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 
 class UserController extends Controller
@@ -78,38 +81,88 @@ class UserController extends Controller
 
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'username' => ['required_without_all:email,phone_number', 'string'],
+                'email' => ['required_without_all:username,phone_number', 'string', 'email'],
+                'phone_number' => ['required_without_all:username,email', 'string'],
+                'password' => ['required', 'string'],
+            
+            ],[
+                'username.required_without_all' => 'The username field must be filled when the username or telephone number does not exist.',
+                'email.required_without_all' => 'The email field must be filled when the username or telephone number does not exist.',
+                'phone_number.required_without_all' => 'The phone number field must be filled in when the username or telephone number does not exist.',
+                'password.required' => 'Password field is required', 
+            ]);
 
-        if ($validator->fails()) {
-            //jika gagal
-            return ResponseFormatter::error([
-                'message' => 'Bad Request',
-                'errors' => $validator->errors()
-            ], 'Bad Request', 400);
-        } else {
-            //jika ok
-            if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-                //jika email atau password valid
-                $user = Auth::user();
-                $token = $user->createToken('authToken')->plainTextToken;
-
-                return ResponseFormatter::success([
-                    'access_token' => $token,
-                    'token_type' => env('TOKEN_TYPE', 'secret'),
-                    'user' => $user
-                ], "login success");
-            } else {
-                //jika email atau password tidak valid
+            if ($validator->fails()) {
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
-                    'errors' => "The email or password is wrong"
+                    'errors' => $validator->errors()
                 ], 'Bad Request', 400);
             }
+
+            $username = $request->input('username');
+            $email = $request->input('email');
+            $phone_number = $request->input('phone_number');
+            $password = $request->input('password');
+
+            $user = null;
+
+            if (!empty($username)) {
+                $user = User::where('username', $username)->first();
+
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User not found',
+                    ], 'Authentication failed', 404);
+                }
+            } elseif (!empty($email)) {
+                $user = User::where('email', $email)->first();
+
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User not found',
+                    ], 'Authentication failed', 404);
+                }
+            } elseif (!empty($phone_number)) {
+                $user = User::where('phone_number', $phone_number)->first();
+
+                if (!$user) {
+                    return ResponseFormatter::error([
+                        'message' => 'User not found',
+                    ], 'Authentication failed', 404);
+                }
+            }
+
+            if (!Hash::check($password, $user->password)) {
+                return ResponseFormatter::error([
+                    'message' => 'Oops! The password you entered is incorrect.',
+                ], 'Authentication failed', 401);
+            }
+
+            if (!$user->hasVerifiedEmail()) {
+                return ResponseFormatter::error([
+                    'message' => 'Email verification required. Please check your email for verification instructions.',
+                ], 'Authentication failed', 401);
+            }
+
+            $token = $user->createToken('authToken')->plainTextToken;
+
+            return ResponseFormatter::success([
+                'access_token' => $token,
+                'token_type' => env('TOKEN_TYPE', 'Bearer'),
+                'user' => $user
+            ], "Congratulations, you have successfully logged in!");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                "message" => "Something error",
+                "error" => $error
+            ], 'Authentication failed', 500);
         }
     }
+     
+    // Metode lainnya...
 
     public function logout()
     {
@@ -168,6 +221,23 @@ class UserController extends Controller
         try {
             $user = User::all();
 
+            return ResponseFormatter::success([
+                'user' => $user
+            ], "success get all users");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                "message" => " something erorr",
+                "error" => $error
+            ], 'authentication failed', 500);
+        }
+    }
+
+    public function getUserAuth()
+    {
+        try {
+            $user = Auth::user(([
+                'id', 'name', 'email', 'birthdate', 'phone_number', 'bio', 'location', 'job_status'
+            ]));
             return ResponseFormatter::success([
                 'user' => $user
             ], "success get all users");
