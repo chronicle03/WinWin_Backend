@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\PasswordReset;
+use App\Models\Favorite; 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
@@ -324,5 +325,46 @@ class UserController extends Controller
                 "error" => $error
             ], 'authentication failed', 500);
         }
+    }
+
+    public function getFavorites(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => ['required', 'exists:users,id'],
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => $validator->errors()
+            ], 'Bad Request', 400);
+        }
+
+        $favorites = Favorite::where('user_id', $request->user_id)->get();
+
+        return ResponseFormatter::success([
+            'favorites' => $favorites
+        ], "Success get favorites");
+    }
+
+    public function createFavorite(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => ['required', 'exists:users,id'],
+            'user_favorite_id' => ['required', 'exists:users,id'],
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseFormatter::error([
+                'message' => 'Bad Request',
+                'errors' => $validator->errors()
+            ], 'Bad Request', 400);
+        }
+
+        $favorite = Favorite::create($request->all());
+
+        return ResponseFormatter::success([
+            'favorite' => $favorite
+        ], "Favorite created");
     }
 }

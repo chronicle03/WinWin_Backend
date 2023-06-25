@@ -32,3 +32,6 @@ Route::get('email/verify/{id}', [UserController::class, 'verify'])->name('verifi
 Route::get('email/verify', [UserController::class, 'notice'])->name('verification.notice');
 Route::get('email/resend', [UserController::class, 'resend'])->name('verification.resend');
 Route::post('/forget-password', [UserController::class,'forgetPassword']);
+
+Route::get('/favorites', [UserController::class, 'getFavorites']);
+Route::post('/favorites', [UserController::class, 'createFavorite']);

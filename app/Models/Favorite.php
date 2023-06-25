@@ -8,4 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 class Favorite extends Model
 {
     use HasFactory;
+    public $table = 'favorites';
+
+    protected $fillable = [
+        'user_id', 
+        'user_favorite_id',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
