@@ -236,7 +236,7 @@ class UserController extends Controller
     {
         try {
             $user = Auth::user(([
-                'id', 'name', 'email', 'birthdate', 'phone_number', 'bio', 'location', 'job_status'
+                'id', 'name', 'email', 'birthdate', 'phone_number', 'bio', 'location', 'job_status', 'gender'
             ]));
             return ResponseFormatter::success([
                 'user' => $user
