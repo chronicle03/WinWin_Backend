@@ -16,19 +16,29 @@ use Illuminate\Support\Facades\Auth;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 
-Route::middleware('auth:sanctum')->get('/logout', [UserController::class, 'logout']);
+// Route::middleware('auth:sanctum')->get('/logout', [UserController::class, 'logout']);
 
 // Auth::routes(['verify' => true]);
 
+Route::middleware('auth:sanctum')->group(function() {
+    Route::get('logout', [UserController::class, 'logout']);
+    Route::get('users', [UserController::class, "getAllUsers"]);
+    Route::post('users/update', [UserController::class, "updateProfile"]);
+});
 
 Route::post('register', [UserController::class, "register"]);
 Route::post('login', [UserController::class, "login"]);
-Route::get('users', [UserController::class, "getAllUsers"]);
 Route::get('users/{id}', [UserController::class, "getUserById"]);
 Route::get('email/verify/{id}', [UserController::class, 'verify'])->name('verification.verify');
 Route::get('email/verify', [UserController::class, 'notice'])->name('verification.notice');
-Route::post('email/resend', [UserController::class, 'resend'])->name('verification.resend');
+Route::get('email/resend', [UserController::class, 'resend'])->name('verification.resend');
+Route::post('/forget-password', [UserController::class,'forgetPassword']);
+Route::get('/favorites', [UserController::class, 'getFavorites']);
+Route::post('/favorites', [UserController::class, 'createFavorite']);
+
+
+
