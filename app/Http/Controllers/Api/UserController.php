@@ -79,7 +79,7 @@ class UserController extends Controller
 
             return ResponseFormatter::success([
                 'access_token' => $token,
-                'token_type' => env('TOKEN_TYPE', 'secret'),
+                'token_type' => "Bearer",
                 'user' => $user
             ], "user registered");
         } catch (Exception $error) {
@@ -158,7 +158,7 @@ class UserController extends Controller
     
             return ResponseFormatter::success([
                 'access_token' => $token,
-                'token_type' => env('TOKEN_TYPE', 'Bearer'),
+                'token_type' => 'Bearer',
                 'user' => $user
             ], "Congratulations, you have successfully logged in!");
         } catch (Exception $error) {
