@@ -16,6 +16,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
+    use HasApiTokens, Notifiable;
     use TwoFactorAuthenticatable;
 
     /**
@@ -30,9 +31,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'birthdate',
         'bio',
+        'gender',
         'phone_number',
         'location',
         'job_status',
+        'remember_token'
     ];
 
     /**
@@ -61,7 +64,10 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @var array<int, string>
      */
-    protected $appends = [
-        'profile_photo_url',
-    ];
+    protected $appends = [];
+
+    public function ability()
+    {
+        return $this->hasMany(Ability::class, 'user_id', 'id');
+    }
 }
