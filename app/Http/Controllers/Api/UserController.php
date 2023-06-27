@@ -85,7 +85,7 @@ class UserController extends Controller
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 "message" => " something erorr",
-                "error" => $error
+                "errors" => $error
             ], 'authentication failed', 500);
         }
     }
@@ -128,6 +128,7 @@ class UserController extends Controller
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
+                        'errors' => 'User not found'
                     ], 'Authentication failed', 404);
                 }
             } elseif (!empty($email)) {
@@ -136,6 +137,7 @@ class UserController extends Controller
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
+                        'errors' => 'Email Unregistered'
                     ], 'Authentication failed', 404);
                 }
             } elseif (!empty($phone_number)) {
@@ -144,6 +146,7 @@ class UserController extends Controller
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
+                        'errors' => 'User not found'
                     ], 'Authentication failed', 404);
                 }
             }
@@ -151,6 +154,7 @@ class UserController extends Controller
             if (!Hash::check($password, $user->password)) {
                 return ResponseFormatter::error([
                     'message' => 'Oops! The password you entered is incorrect.',
+                    'errors' => 'Oops! The password you entered is incorrect.'
                 ], 'Authentication failed', 401);
             }
     
@@ -164,7 +168,7 @@ class UserController extends Controller
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 "message" => "Something error",
-                "error" => $error
+                "errors" => $error
             ], 'Authentication failed', 500);
         }
     }
@@ -283,20 +287,26 @@ class UserController extends Controller
         ], 400);
     }
 
-    public function resend()
+    public function resend(Request $request)
     {
-        if (Auth::user()->hasVerifiedEmail()) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Email sudah diverifikasi'
-            ], 200);
+        $user = User::where('email', $request->email)->first();
+
+        if(!$user){
+            return ResponseFormatter::error([
+                "message" => "something erorr",
+                "error" => "Email not found"
+            ], 'not found', 404);
         }
 
-        Auth::user()->sendEmailVerificationNotification();
-        return response()->json([
-            'status' => true,
-            'message' => 'Link verifikasi email sudah dikirim ke email anda.'
-        ], 200);
+        if ($user->hasVerifiedEmail()) {
+            return ResponseFormatter::error([
+                "message" => "something erorr",
+                "error" => "Your email has been verified"
+            ], 'not found', 404);
+        }
+
+        $user->sendEmailVerificationNotification();
+        return ResponseFormatter::success($user->email, "Verification email has been sent");
     }
 
     public function forgetPassword(Request $request)
