@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\PasswordReset;
-use App\Models\Favorite; 
+use App\Models\Favorite;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
@@ -36,7 +36,7 @@ class UserController extends Controller
                 'name' => ['required', 'string', 'max:100'],
                 'username' => ['required', 'string', 'max:100', 'unique:users'],
                 'email' => ['required', 'string', 'max:255', 'email', 'unique:users'],
-                'password' => ['required', 'string', 'min:8',new Password],
+                'password' => ['required', 'string', 'min:8', new Password],
                 'confirm_password' => ['required'],
                 'birthdate' => ['string'],
                 'is_checked' => ['required'],
@@ -98,14 +98,14 @@ class UserController extends Controller
                 'email' => ['required_without_all:username,phone_number', 'string', 'email'],
                 'phone_number' => ['required_without_all:username,email', 'string'],
                 'password' => ['required', 'string'],
-            
-            ],[
+
+            ], [
                 'username.required_without_all' => 'The username field must be filled when the username or telephone number does not exist.',
                 'email.required_without_all' => 'The email field must be filled when the username or telephone number does not exist.',
                 'phone_number.required_without_all' => 'The phone number field must be filled in when the username or telephone number does not exist.',
-                'password.required' => 'Password field is required', 
+                'password.required' => 'Password field is required',
             ]);
-    
+
             if ($validator->fails()) {
                 return ResponseFormatter::error([
                     'message' => 'Bad Request',
@@ -113,18 +113,18 @@ class UserController extends Controller
                 ], 'Bad Request', 400);
             }
 
-            
-    
+
+
             $username = $request->input('username');
             $email = $request->input('email');
             $phone_number = $request->input('phone_number');
             $password = $request->input('password');
-    
+
             $user = null;
-    
+
             if (!empty($username)) {
                 $user = User::where('username', $username)->first();
-    
+
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
@@ -133,7 +133,7 @@ class UserController extends Controller
                 }
             } elseif (!empty($email)) {
                 $user = User::where('email', $email)->first();
-    
+
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
@@ -142,7 +142,7 @@ class UserController extends Controller
                 }
             } elseif (!empty($phone_number)) {
                 $user = User::where('phone_number', $phone_number)->first();
-    
+
                 if (!$user) {
                     return ResponseFormatter::error([
                         'message' => 'User not found',
@@ -150,16 +150,17 @@ class UserController extends Controller
                     ], 'Authentication failed', 404);
                 }
             }
-    
+
             if (!Hash::check($password, $user->password)) {
                 return ResponseFormatter::error([
                     'message' => 'Oops! The password you entered is incorrect.',
                     'errors' => 'Oops! The password you entered is incorrect.'
                 ], 'Authentication failed', 401);
             }
-    
+
             $token = $user->createToken('authToken')->plainTextToken;
-    
+            $userSkills = $user->ability->pluck('skills')->toArray();
+
             return ResponseFormatter::success([
                 'access_token' => $token,
                 'token_type' => 'Bearer',
@@ -173,7 +174,7 @@ class UserController extends Controller
         }
     }
 
-    Public function updateProfile(Request $request)
+    public function updateProfile(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -184,7 +185,7 @@ class UserController extends Controller
                 'phone_number' => ['numeric', 'unique:users'],
                 'email' => ['string', 'max:255', 'email', 'unique:users'],
                 'job_status' => ['string'],
-                'skills' => ['array'],
+                'skills' => ['string'],
                 'bio' => ['string'],
                 'profile_photo_path' => ['image'],
             ]);
@@ -199,26 +200,20 @@ class UserController extends Controller
             $data = $request->except('skills');
             $user = Auth::user();
 
-            $skills = $request->skills;
-            if (!empty($skills)) {
+            $skillsString = $request->input('skills'); // Ambil nilai string dari request
+
+            if (!empty($skillsString)) {
+                $skills = explode(',', $skillsString);
+
+                Ability::where('user_id', $user->id)->delete();
+
                 foreach ($skills as $skillName) {
-                    $skill = Skill::where('name', $skillName)->first();
-                    if (empty($skill)) {
-                        Skill::create([
-                            'name' => $skillName,
-                        ]);
-                    }
+                    $skill = Skill::firstOrCreate(['name' => $skillName]);
 
-                    $skill = Skill::where('name', $skillName)->first();
-
-                    $ability = Ability::where('user_id', $user->id)->where('skills_id', $skill->id)->first();
-
-                    if (empty($ability)) {
-                        Ability::create([
-                            'user_id' => $user->id,
-                            'skills_id' => $skill->id,
-                        ]);
-                    }
+                    Ability::create([
+                        'user_id' => $user->id,
+                        'skills_id' => $skill->id,
+                    ]);
                 }
             }
 
@@ -291,7 +286,7 @@ class UserController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if(!$user){
+        if (!$user) {
             return ResponseFormatter::error([
                 "message" => "something erorr",
                 "error" => "Email not found"
@@ -312,20 +307,20 @@ class UserController extends Controller
     public function forgetPassword(Request $request)
     {
         try {
-            
+
             $user = User::where('email', $request->email)->get();
             if (count($user) > 0) {
 
                 $token = Str::random();
                 $domain = URL::to('/');
-                $url = $domain.'/reset-password?token='.$token;
+                $url = $domain . '/reset-password?token=' . $token;
 
                 $data['url'] = $url;
                 $data['email'] = $request->email;
                 $data['title'] = "Password Reset";
-                $data['body'] = "Please click on below link to reset your password.";                
+                $data['body'] = "Please click on below link to reset your password.";
 
-                Mail::send('forgetPasswordMail', ['data'=>$data], function($message) use ($data){
+                Mail::send('forgetPasswordMail', ['data' => $data], function ($message) use ($data) {
                     $message->to($data['email'])->subject($data['title']);
                 });
 
@@ -337,21 +332,19 @@ class UserController extends Controller
                         'token' => $token,
                         'created_at' => $datetime
                     ]
-                    );
+                );
 
-                    return ResponseFormatter::success([
-                        "message" => "Please check your mail to reset your password",
-                        
-                    ], 'Please check your mail to reset your password.');
-                    //response()->json(['status'=>true, 'message'=>'Please check your mail to reset your password']);
+                return ResponseFormatter::success([
+                    "message" => "Please check your mail to reset your password",
 
+                ], 'Please check your mail to reset your password.');
+                //response()->json(['status'=>true, 'message'=>'Please check your mail to reset your password']);
+
+            } else {
+                return response()->json(['status' => false, 'message' => 'User not found.']);
             }
-            else{
-                return response()->json(['status'=>false, 'message'=>'User not found.']);
-            }
-
         } catch (\Exception $e) {
-            return response()->json(['status'=>false, 'message'=>$e->getMessage()]);
+            return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
     }
 
@@ -359,12 +352,11 @@ class UserController extends Controller
     public function resetPasswordLoad(Request $request)
     {
         $resetData = PasswordReset::where('token', $request->token)->get();
-        if (isset($request->token) && count($resetData) > 0){
-            
-            $user = User::where('email',$resetData[0]['email'])->get();
+        if (isset($request->token) && count($resetData) > 0) {
+
+            $user = User::where('email', $resetData[0]['email'])->get();
             return view('resetPassword', compact('user'));
-        }
-        else {
+        } else {
             return view('404');
         }
     }
