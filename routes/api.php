@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -41,5 +42,6 @@ Route::post('/forget-password', [UserController::class,'forgetPassword']);
 Route::get('/favorites', [UserController::class, 'getFavorites']);
 Route::post('/favorites', [UserController::class, 'createFavorite']);
 
-
+Route::get('skills', [SkillController::class, 'getSkills']);
+Route::post('skills', [SkillController::class, 'create']);
 

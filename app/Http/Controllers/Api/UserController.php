@@ -40,6 +40,7 @@ class UserController extends Controller
                 'confirm_password' => ['required'],
                 'birthdate' => ['string'],
                 'is_checked' => ['required'],
+                'skills' => ['string'],
                 'phone_number' => ['required', 'numeric', 'unique:users'],
             ]);
 
@@ -73,7 +74,26 @@ class UserController extends Controller
                 'password' => Hash::make($request->password),
             ])->sendEmailVerificationNotification();
 
+
             $user = User::where('email', $request->email)->first();
+            $skillsString = $request->input('skills'); // Ambil nilai string dari request
+
+            if (!empty($skillsString)) {
+                $skills = explode(',', $skillsString);
+
+                Ability::where('user_id', $user->id)->delete();
+
+                foreach ($skills as $skillName) {
+                    $skill = Skill::firstOrCreate(['name' => $skillName]);
+
+                    Ability::create([
+                        'user_id' => $user->id,
+                        'skills_id' => $skill->id,
+                    ]);
+                }
+            }
+            
+            $userSkills = $user->ability->pluck('skills')->toArray();
 
             $token = $user->createToken('authToken')->plainTextToken;
 
@@ -181,7 +201,7 @@ class UserController extends Controller
                 'name' => ['string', 'max:100'],
                 'birthdate' => ['string'],
                 'location' => ['string'],
-                'gender' => ['required', 'string',],
+                'gender' => ['string',],
                 'phone_number' => ['numeric', 'unique:users'],
                 'email' => ['string', 'max:255', 'email', 'unique:users'],
                 'job_status' => ['string'],
@@ -218,7 +238,12 @@ class UserController extends Controller
             }
 
             if ($request->profile_photo_path) {
-
+                // Menghapus gambar profil lama
+                if ($user->profile_photo_path) {
+                    $oldImagePath = str_replace('/storage', 'public', $user->profile_photo_path);
+                    Storage::delete($oldImagePath);
+                }
+            
                 $image = $request->file('profile_photo_path');
                 $file_name = $user->id . $user->name . '.' . $image->getClientOriginalExtension();
                 try {
