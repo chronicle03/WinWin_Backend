@@ -3,12 +3,15 @@
 <head>
     <style> body {
         background-color: #30444F;
+            margin: 0;
+            padding: 0;
     }
     h1 {
         color: #E7D31F;
         font-family: "Poppins", sans-serif;
     }
     </style>
+    <link href="/assets/font/Poppins/Poppins-Regular.ttf" rel="stylesheet">
     <title>Reset Password Page</title>
 </head>
 <body>
