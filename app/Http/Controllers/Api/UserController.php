@@ -372,7 +372,7 @@ class UserController extends Controller
         $user->password = Hash::make($request->password);
         $user->save();
 
-        //PasswordReset::where('email', $user->email)->delete();
+        PasswordReset::where('email', $user->email)->delete();
 
         return view('successResetPassword');
     }
