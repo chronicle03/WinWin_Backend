@@ -15,4 +15,3 @@
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;"></div>
     <h1 style="text-align: center; color: green;">Your password has been successfully reset</h1>
 </html>
-
