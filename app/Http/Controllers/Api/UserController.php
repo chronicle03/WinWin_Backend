@@ -271,7 +271,7 @@ class UserController extends Controller
             $user->markEmailAsVerified();
         }
 
-        return  redirect()->to('/');
+        return  view('verifyemail');
     }
 
     public function notice()
