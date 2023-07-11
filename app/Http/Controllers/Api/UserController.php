@@ -180,6 +180,7 @@ class UserController extends Controller
 
             $token = $user->createToken('authToken')->plainTextToken;
             $userSkills = $user->ability->pluck('skills')->toArray();
+            $userFavorites = $user->favorite;
 
             return ResponseFormatter::success([
                 'access_token' => $token,
@@ -260,7 +261,7 @@ class UserController extends Controller
 
             $user->update($data);
 
-            $userSkills = $user->ability->pluck('skills')->toArray();
+            $user->load('ability.skills', 'favorite');
             // $user['skills'] = $userSkills;
 
 
@@ -406,7 +407,7 @@ class UserController extends Controller
     public function getAllUsers()
     {
         try {
-            $users = User::with('ability.skills')->get();
+            $users = User::with('ability.skills', 'favorite')->get();
 
             $userSkills = [];
             foreach ($users as $user) {
@@ -460,6 +461,7 @@ class UserController extends Controller
         }
 
         $favorites = Favorite::where('user_id', $request->user_id)->get();
+        
 
         return ResponseFormatter::success([
             'favorites' => $favorites
@@ -472,18 +474,24 @@ class UserController extends Controller
             'user_id' => ['required', 'exists:users,id'],
             'user_favorite_id' => ['required', 'exists:users,id'],
         ]);
-
+    
         if ($validator->fails()) {
             return ResponseFormatter::error([
                 'message' => 'Bad Request',
                 'errors' => $validator->errors()
             ], 'Bad Request', 400);
         }
-
-        $favorite = Favorite::create($request->all());
-
+    
+        $favorite = Favorite::updateOrCreate(
+            ['user_id' => $request->user_id, 'user_favorite_id' => $request->user_favorite_id],
+            $request->all()
+        );
+    
+        $users = Auth::user();
+        $users->load('ability.skills', 'favorite');
+    
         return ResponseFormatter::success([
-            'favorite' => $favorite
+            'users' => $users
         ], "Favorite created");
     }
 }

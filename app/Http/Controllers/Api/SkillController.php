@@ -10,7 +10,8 @@ use App\Models\Skill;
 
 class SkillController extends Controller
 {
-    public function getSkills(){
+    public function getSkills()
+    {
 
         try {
             $skill = Skill::select('name')->get();
@@ -25,7 +26,8 @@ class SkillController extends Controller
         }
     }
 
-    public function create(Request $request){
+    public function create(Request $request)
+    {
 
         try {
 
@@ -39,10 +41,10 @@ class SkillController extends Controller
                     'errors' => $validator->errors()
                 ], 'Bad Request', 400);
             }
-            Skill::create(['name'=> $request->name]);
+            Skill::create(['name' => $request->name]);
 
             $skill = Skill::select('name')->where('name', $request->name)->first();
-          
+
             return ResponseFormatter::success([
                 'skills' => $skill
             ], 'Success create skill');
@@ -54,4 +56,3 @@ class SkillController extends Controller
         }
     }
 }
-

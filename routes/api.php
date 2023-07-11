@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Auth;
 Route::middleware('auth:sanctum')->group(function() {
     Route::get('logout', [UserController::class, 'logout']);
     Route::post('users/update', [UserController::class, "updateProfile"]);
+    Route::post('/favorites', [UserController::class, 'createFavorite']);
 });
 
 Route::get('users', [UserController::class, "getAllUsers"]);
@@ -40,7 +41,7 @@ Route::get('email/verify', [UserController::class, 'notice'])->name('verificatio
 Route::post('email/resend', [UserController::class, 'resend'])->name('verification.resend');
 Route::post('/forget-password', [UserController::class,'forgetPassword']);
 Route::get('/favorites', [UserController::class, 'getFavorites']);
-Route::post('/favorites', [UserController::class, 'createFavorite']);
+
 
 Route::get('skills', [SkillController::class, 'getSkills']);
 Route::post('skills', [SkillController::class, 'create']);
