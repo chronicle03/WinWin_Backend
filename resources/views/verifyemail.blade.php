@@ -37,15 +37,15 @@
 
     </style>
     <link href="winwin-backend/assets/font/Poppins/Poppins-Regular.ttf" rel="stylesheet">
-    <title>Success Reset Password Page</title>
+    <title>Verify Email Page</title>
 </head>
 
 <body>    
     <div style="position: absolute; top: 50px;">
-        <img src="https://img.icons8.com/?size=512&id=1M40xzvHcK5t&format=png" class="logo">
+        <img src="https://img.icons8.com/?size=512&id=2GR1OJKnj8uC&format=png" class="logo">
     </div>
     <div class="container">
-        <h1>Your password has been successfully reset</h1>
+        <h1>Your mail has been successfully verified</h1>
     </div>
 </body>
 </html>
