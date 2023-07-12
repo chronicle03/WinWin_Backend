@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Auth;
 
 // Auth::routes(['verify' => true]);
 
+
 Route::middleware('auth:sanctum')->group(function() {
     Route::get('logout', [UserController::class, 'logout']);
     Route::post('users/update', [UserController::class, "updateProfile"]);
