@@ -114,7 +114,6 @@ class UserController extends Controller
             }
 
 
-
             $username = $request->input('username');
             $email = $request->input('email');
             $phone_number = $request->input('phone_number');
@@ -149,6 +148,13 @@ class UserController extends Controller
                         'errors' => 'User not found'
                     ], 'Authentication failed', 404);
                 }
+            } 
+
+            if ($user->email_verified_at == null) {
+                return ResponseFormatter::error([
+                    'message' => 'Oops! Your email has not been verified',
+                    'errors' => 'Oops! Your email has not been verified'
+                ], 'Authentication failed', 400);
             }
 
             if (!Hash::check($password, $user->password)) {
