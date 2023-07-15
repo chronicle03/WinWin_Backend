@@ -343,15 +343,18 @@ class UserController extends Controller
 
                 return ResponseFormatter::success([
                     "message" => "Please check your mail to reset your password",
-
                 ], 'Please check your mail to reset your password.');
                 //response()->json(['status'=>true, 'message'=>'Please check your mail to reset your password']);
 
             } else {
-                return response()->json(['status' => false, 'message' => 'User not found.']);
+                return ResponseFormatter::error([
+                "message" => "User Not Found",
+            ], 'not found', 404);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => $e->getMessage()]);
+            return ResponseFormatter::error([
+                "message" => "Something Error",
+            ], 'Something Error', 500);
         }
     }
 
