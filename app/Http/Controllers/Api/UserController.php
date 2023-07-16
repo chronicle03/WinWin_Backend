@@ -39,6 +39,7 @@ class UserController extends Controller
                 'password' => ['required', 'string', 'min:8', new Password],
                 'confirm_password' => ['required'],
                 'birthdate' => ['string'],
+                'skills' => ['string'],
                 'is_checked' => ['required'],
                 'phone_number' => ['required', 'numeric', 'unique:users'],
             ]);
@@ -64,6 +65,7 @@ class UserController extends Controller
                 ], 'Bad Request', 400);
             }
 
+        
             User::create([
                 'name' => $request->name,
                 'username' => $request->username,
@@ -74,6 +76,27 @@ class UserController extends Controller
             ])->sendEmailVerificationNotification();
 
             $user = User::where('email', $request->email)->first();
+
+            $skillsString = $request->input('skills'); // Ambil nilai string dari request
+
+            if (!empty($skillsString)) {
+                $skills = explode(',', $skillsString);
+
+                Ability::where('user_id', $user->id)->delete();
+
+                foreach ($skills as $skillName) {
+                    $skill = Skill::firstOrCreate(['name' => $skillName]);
+
+                    Ability::create([
+                        'user_id' => $user->id,
+                        'skills_id' => $skill->id,
+                    ]);
+                }
+            }
+            
+            $userSkills = $user->ability->pluck('skills')->toArray();
+            $userFavorites = $user->favorite;
+
 
             $token = $user->createToken('authToken')->plainTextToken;
 
